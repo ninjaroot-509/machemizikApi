@@ -32,9 +32,20 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = '__all__'
         
 class SongSerializer(serializers.ModelSerializer):
+    author = serializers.CharField()
+    img = serializers.SerializerMethodField()
+    
     class Meta: 
         model = Song
-        fields = '__all__'
+        exclude = ('image', 'album', 'file', 'is_active')
+        
+    def get_img(self, song):
+        request = self.context.get('request')
+        if song.image:
+            img = song.image.url
+        else:
+            img = song.album.image.url
+        return request.build_absolute_uri(img)
         
 class AlbumSerializer(serializers.ModelSerializer):
     song_album = SongSerializer(read_only=True, many=True)

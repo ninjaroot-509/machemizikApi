@@ -54,6 +54,7 @@ admin.site.register(WalletRequested, WalletRequestedAdmin)
 
 admin.site.register(Album)
 admin.site.register(Song)
+admin.site.register(ViewSong)
 admin.site.register(Like)
 admin.site.register(Download)
 admin.site.register(Genre)

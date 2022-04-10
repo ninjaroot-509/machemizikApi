@@ -43,7 +43,7 @@ class AllSongView(APIView):
     
     def get(self, request, format=None):
         user = self.request.user
-        songs = Song.objects.filter(is_active=True)
+        songs = Song.objects.filter(is_active=True).order_by('?')
         serializer = SongSerializer(songs, many=True, context={"request": request})
         return JsonResponse(serializer.data, safe=False)
     

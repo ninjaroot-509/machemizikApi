@@ -3,7 +3,6 @@ from django.db import models
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from numpy import True_
 from phonenumber_field.modelfields import PhoneNumberField
 from django.core.mail import send_mail, BadHeaderError, mail_admins
 from django.utils.html import format_html
@@ -72,7 +71,7 @@ def create_ref_code():
 
 class Genre(models.Model):
     name = models.CharField(max_length = 100)
-    description = models.CharField(max_length = 200)
+    description = models.CharField(blank=True, max_length = 200)
     
     def __str__(self):
         return self.name
@@ -84,11 +83,11 @@ class Album(models.Model):
     image = models.ImageField(upload_to='albums/')
 
     def __str__(self):
-        return self.album_title + '-' + self.artist.first_name
+        return self.title + '-' + self.artist.first_name
 
 class Song(models.Model):
     album =  models.ForeignKey(Album, related_name='song_album', on_delete = models.CASCADE)
-    image = models.ImageField(upload_to='albums/', null=True, blank=False)
+    image = models.ImageField(upload_to='albums/', null=True, blank=True)
     file = models.FileField(upload_to='songs/')
     title = models.CharField(max_length = 100)
     is_active = models.BooleanField(default=True)
@@ -96,7 +95,17 @@ class Song(models.Model):
     def __str__(self):
         return self.title
     
+    def author(self):
+        return self.album.artist.first_name + ' ' + self.album.artist.last_name
+    
 class Like(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
+    song =  models.ForeignKey(Song, on_delete = models.CASCADE)
+
+    def __str__(self):
+        return self.user.first_name
+    
+class ViewSong(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
     song =  models.ForeignKey(Song, on_delete = models.CASCADE)
 

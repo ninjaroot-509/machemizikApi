@@ -11,8 +11,8 @@ urlpatterns = [
     path('my-albums', views.MyAlbumView.as_view()),
     path('my-downloads', views.MySongDownloadView.as_view()),
     path('user', views.UserView.as_view()),
+    path('wallet', views.WalletView.as_view()),
     path('depot', views.WalletFormView.as_view()),
     path('retrait', views.RetraitView.as_view()),
-    path('wallet', views.WalletView.as_view()),
     path('trasaction/success', views.MoncashView.as_view()),
 ]
