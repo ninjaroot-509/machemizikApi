@@ -10,6 +10,8 @@ urlpatterns = [
     path('my-songs', views.MySongView.as_view()),
     path('my-albums', views.MyAlbumView.as_view()),
     path('my-downloads', views.MySongDownloadView.as_view()),
+    path('cart', views.MyCartView.as_view()),
+    path('cart-remove', views.RemoveToCartView.as_view()),
     path('user', views.UserView.as_view()),
     path('wallet', views.WalletView.as_view()),
     path('depot', views.WalletFormView.as_view()),

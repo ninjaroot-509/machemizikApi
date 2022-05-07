@@ -74,7 +74,7 @@ class MySongView(APIView):
     def get(self, request, format=None):
         user = self.request.user
         songs = Song.objects.filter(album__artist=user)
-        serializer = SongSerializer(songs, many=True, context={"request": request})
+        serializer = AuthorizeSongSerializer(songs, many=True, context={"request": request})
         return JsonResponse(serializer.data, safe=False)
     
     def post(self, request, format=None):
@@ -86,7 +86,7 @@ class MySongView(APIView):
         album = get_object_or_404(Album, id=album_id)
         Song.objects.create(album=album, title=title, audio=audio, image=image)
         songs = Song.objects.filter(album__artist=user)
-        serializer = SongSerializer(songs, many=True, context={"request": request})
+        serializer = AuthorizeSongSerializer(songs, many=True, context={"request": request})
         return JsonResponse(serializer.data, safe=False)
         
 
@@ -100,7 +100,7 @@ class MySongDownloadView(APIView):
         downloads = Download.objects.filter(user=user, is_active=True)
         for download in downloads:
             songs.append(download.song)
-        serializer = SongSerializer(songs, many=True, context={"request": request})
+        serializer = AuthorizeSongSerializer(songs, many=True, context={"request": request})
         return JsonResponse(serializer.data, safe=False)
     
     def post(self, request, format=None):
@@ -112,7 +112,7 @@ class MySongDownloadView(APIView):
         downloads = Download.objects.filter(user=user, is_active=True)
         for download in downloads:
             songs.append(download.song)
-        serializer = SongSerializer(songs, many=True, context={"request": request})
+        serializer = AuthorizeSongSerializer(songs, many=True, context={"request": request})
         return JsonResponse(serializer.data, safe=False)
 
 
@@ -164,6 +164,63 @@ class UserView(APIView):
         user.save()
         serializer = UserSerializer(user, context={"request": request})
         return JsonResponse(serializer.data, safe=False)
+
+class MyCartView(APIView):
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    
+    def get(self, request, format=None):
+        user = self.request.user
+        order_songs = Order.objects.filter(user=user, ordered=False)
+        if order_songs.exists():
+            songs = []
+            for ord in order_songs[0].songs.all():
+                songs.append(ord.song)
+            serializer = SongSerializer(songs, many=True, context={"request": request})
+            return JsonResponse(serializer.data, safe=False)
+        else:
+            return JsonResponse({'status': 0, 'message': 'no song in cart'}, status=status.HTTP_404_NOT_FOUND)
+        
+    def post(self, request, format=None):
+        user = self.request.user
+        song_id = request.data.get("song_id")
+        song = get_object_or_404(Song, id=song_id)
+        order_song, created = OrderSong.objects.get_or_create(
+            song=song,
+            user=user,
+            ordered=False
+        )
+        order_qs = Order.objects.filter(user=user, ordered=False)
+        if order_qs.exists():
+            order = order_qs[0]
+            if not order.songs.filter(song__id=song.id).exists():
+                order.songs.add(order_song)
+                return JsonResponse({'status': 1, 'message': 'add with success!'})
+        else:
+            ordered_date = datetime.now()
+            order = Order.objects.create(user=user, ordered_date=ordered_date)
+            order.songs.add(order_song)
+        return JsonResponse({'status': 1, 'message': 'create with success!'})
+    
+class RemoveToCartView(APIView):
+    def post(self, request, format=None):
+        user = self.request.user
+        song_id = request.data.get("song_id")
+        song = get_object_or_404(Song, id=song_id)
+        order_song, created = OrderSong.objects.get_or_create(
+            song=song,
+            user=user,
+            ordered=False
+        )
+        order_qs = Order.objects.filter(user=user, ordered=False)
+        if order_qs.exists():
+            order = order_qs[0]
+            if order.songs.filter(song__id=song.id).exists():
+                order.songs.remove(order_song)
+                return JsonResponse({'status': 1, 'message': 'delete with success!'})
+            else:
+                return JsonResponse({'status': 1, 'message': 'not found!'}, status=status.HTTP_404_NOT_FOUND)
+        return JsonResponse({'status': 1, 'message': 'not found!'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class WalletView(APIView):

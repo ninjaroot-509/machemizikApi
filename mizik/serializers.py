@@ -2,6 +2,7 @@ from rest_framework import serializers
 from mizik.models import *
 from mizik.models import User
 from django.contrib.auth import authenticate, login
+from mutagen.mp3 import MP3
 
 class WalletSerializer(serializers.ModelSerializer):
     class Meta:
@@ -31,13 +32,23 @@ class GenreSerializer(serializers.ModelSerializer):
         model = Genre
         fields = '__all__'
         
+def convert(seconds):
+    hours = seconds // 3600
+    seconds %= 3600
+    mins = seconds // 60
+    seconds %= 60
+    return hours, mins, seconds
+
 class SongSerializer(serializers.ModelSerializer):
+    get_total_price = serializers.CharField()
     author = serializers.CharField()
     img = serializers.SerializerMethodField()
+    uri = serializers.SerializerMethodField()
+    durationMillis = serializers.SerializerMethodField()
     
     class Meta: 
         model = Song
-        exclude = ('image', 'album', 'file', 'is_active')
+        exclude = ('image', 'album', 'file', 'file_demo', 'is_active')
         
     def get_img(self, song):
         request = self.context.get('request')
@@ -46,6 +57,52 @@ class SongSerializer(serializers.ModelSerializer):
         else:
             img = song.album.image.url
         return request.build_absolute_uri(img)
+    
+    def get_uri(self, song):
+        request = self.context.get('request')
+        uri = song.file_demo.url
+        return request.build_absolute_uri(uri)
+    
+    def get_durationMillis(self, song):
+        if song.file_demo:
+            audio = MP3(song.file_demo)
+            durationMillis = audio.info.length * 1000
+            hours, mins, seconds = convert(durationMillis)
+            return '{}:{}'.format(mins, seconds)
+        return None
+
+class AuthorizeSongSerializer(serializers.ModelSerializer):
+    get_total_price = serializers.CharField()
+    get_amount_saved = serializers.CharField()
+    author = serializers.CharField()
+    img = serializers.SerializerMethodField()
+    uri = serializers.SerializerMethodField()
+    durationMillis = serializers.SerializerMethodField()
+    
+    class Meta: 
+        model = Song
+        exclude = ('image', 'album', 'file', 'file_demo', 'price', 'discount_price', 'is_active')
+        
+    def get_img(self, song):
+        request = self.context.get('request')
+        if song.image:
+            img = song.image.url
+        else:
+            img = song.album.image.url
+        return request.build_absolute_uri(img)
+    
+    def get_uri(self, song):
+        request = self.context.get('request')
+        uri = song.file.url
+        return request.build_absolute_uri(uri)
+    
+    def get_durationMillis(self, song):
+        if song.file:
+            audio = MP3(song.file)
+            durationMillis = audio.info.length * 1000
+            return durationMillis
+        return None
+    
         
 class AlbumSerializer(serializers.ModelSerializer):
     song_album = SongSerializer(read_only=True, many=True)

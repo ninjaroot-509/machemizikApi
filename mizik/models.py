@@ -90,6 +90,7 @@ class Song(models.Model):
     album =  models.ForeignKey(Album, related_name='song_album', on_delete = models.CASCADE)
     image = models.ImageField(upload_to='albums/', null=True, blank=True)
     file = models.FileField(upload_to='songs/')
+    file_demo = models.FileField(upload_to='songs/')
     title = models.CharField(max_length = 100)
     price = models.FloatField()
     discount_price = models.FloatField(blank=True, null=True)
